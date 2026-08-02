@@ -15,9 +15,11 @@ spec:
       labels:
         app: gitstronaut
     spec:
+      imagePullSecrets:
+        - name: forgejo-registry
       containers:
         - name: gitstronaut
-          image: ghcr.io/hinsonct/gitstronaut.com:latest
+          image: hinson-server.local:30300/hinsonct/gitstronaut.com:latest
           ports:
             - containerPort: 3000
           resources:

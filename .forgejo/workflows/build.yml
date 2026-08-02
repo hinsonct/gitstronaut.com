@@ -1,0 +1,37 @@
+name: build-and-push
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: hinson-server.local:30300
+  IMAGE: hinson-server.local:30300/hinsonct/gitstronaut.com
+
+jobs:
+  build:
+    runs-on: host
+    steps:
+      - name: Checkout
+        run: |
+          rm -rf src
+          git clone --depth 1 --branch "${{ github.ref_name }}" \
+            -c http.extraheader="Authorization: token ${{ secrets.REGISTRY_TOKEN }}" \
+            "${{ github.server_url }}/${{ github.repository }}.git" src
+
+      - name: Build image
+        working-directory: src
+        run: |
+          docker build \
+            -t "${IMAGE}:${{ github.sha }}" \
+            -t "${IMAGE}:latest" \
+            .
+
+      - name: Log in to registry
+        run: |
+          echo "${{ secrets.REGISTRY_TOKEN }}" | docker login "${REGISTRY}" -u "${{ github.actor }}" --password-stdin
+
+      - name: Push image
+        run: |
+          docker push "${IMAGE}:${{ github.sha }}"
+          docker push "${IMAGE}:latest"
