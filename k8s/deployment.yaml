@@ -24,7 +24,7 @@ spec:
         - name: forgejo-registry
       containers:
         - name: gitstronaut
-          image: hinson-server.local:30300/hinsonct/gitstronaut.com:latest
+          image: hinson-server.local:30300/hinsonct/gitstronaut.com:dc3c4beec4e8eb56528c3c16f7682f3db1c0661f
           ports:
             - containerPort: 3000
           resources:
