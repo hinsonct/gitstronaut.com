@@ -16,9 +16,8 @@ spec:
                 name: gitstronaut
                 port:
                   number: 80
-    # Temporary, for pre-cutover validation while gitstronaut.com still points at Vercel.
-    # Remove once the apex DNS record is switched to the tunnel.
-    - host: test.gitstronaut.com
+    # Fallback if the www redirect rule (configured in Cloudflare dashboard) isn't set up yet.
+    - host: www.gitstronaut.com
       http:
         paths:
           - path: /
