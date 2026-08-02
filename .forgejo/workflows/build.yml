@@ -35,3 +35,8 @@ jobs:
         run: |
           docker push "${IMAGE}:${{ github.sha }}"
           docker push "${IMAGE}:latest"
+
+      - name: Deploy
+        run: |
+          kubectl -n gitstronaut set image deployment/gitstronaut "gitstronaut=${IMAGE}:${{ github.sha }}"
+          kubectl -n gitstronaut rollout status deployment/gitstronaut --timeout=180s
