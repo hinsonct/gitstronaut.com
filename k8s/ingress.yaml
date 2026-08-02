@@ -16,3 +16,15 @@ spec:
                 name: gitstronaut
                 port:
                   number: 80
+    # Temporary, for pre-cutover validation while gitstronaut.com still points at Vercel.
+    # Remove once the apex DNS record is switched to the tunnel.
+    - host: test.gitstronaut.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gitstronaut
+                port:
+                  number: 80
