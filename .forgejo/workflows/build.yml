@@ -1,0 +1,58 @@
+name: build-and-push
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: hinson-server.local:30300
+  IMAGE: hinson-server.local:30300/hinsonct/gitstronaut.com
+
+jobs:
+  build:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: host
+    steps:
+      - name: Checkout
+        run: |
+          rm -rf src
+          git clone --depth 1 --branch "${{ github.ref_name }}" \
+            -c http.extraheader="Authorization: token ${{ secrets.REGISTRY_TOKEN }}" \
+            "${{ github.server_url }}/${{ github.repository }}.git" src
+          git -C src config http.extraheader "Authorization: token ${{ secrets.REGISTRY_TOKEN }}"
+          git -C src config user.email "forgejo-actions@hinson-server.local"
+          git -C src config user.name "Forgejo Actions"
+
+      - name: Build image
+        working-directory: src
+        run: |
+          docker build \
+            -t "${IMAGE}:${{ github.sha }}" \
+            -t "${IMAGE}:latest" \
+            .
+
+      - name: Log in to registry
+        run: |
+          echo "${{ secrets.REGISTRY_TOKEN }}" | docker login "${REGISTRY}" -u "${{ github.actor }}" --password-stdin
+
+      - name: Push image
+        run: |
+          docker push "${IMAGE}:${{ github.sha }}"
+          docker push "${IMAGE}:latest"
+
+      - name: Deploy
+        run: |
+          kubectl -n gitstronaut set image deployment/gitstronaut "gitstronaut=${IMAGE}:${{ github.sha }}"
+          kubectl -n gitstronaut rollout status deployment/gitstronaut --timeout=180s
+
+      - name: Record deployed image in git
+        working-directory: src
+        run: |
+          sed -i "s|image: ${IMAGE}:.*|image: ${IMAGE}:${{ github.sha }}|" k8s/deployment.yaml
+          if ! git diff --quiet -- k8s/deployment.yaml; then
+            git add k8s/deployment.yaml
+            git commit -m "chore: record deployed image ${{ github.sha }} [skip ci]"
+            git push origin "HEAD:${{ github.ref_name }}"
+          else
+            echo "manifest already up to date"
+          fi

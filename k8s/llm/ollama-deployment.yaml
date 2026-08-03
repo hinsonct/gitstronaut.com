@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: llm
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  strategy:
+    # Only one pod can hold the GPU / model files at a time.
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      # Requires the NVIDIA device plugin daemonset (see nvidia-device-plugin.yaml)
+      # to be running before this pod can schedule with a GPU claim.
+      containers:
+        - name: ollama
+          image: docker.io/ollama/ollama:latest
+          ports:
+            - containerPort: 11434
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0:11434"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 2Gi
+            limits:
+              cpu: "4"
+              memory: 12Gi
+              nvidia.com/gpu: 1
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 20
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: ollama-models

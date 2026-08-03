@@ -6,7 +6,12 @@ metadata:
   labels:
     app: gitstronaut
 spec:
-  replicas: 1
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: gitstronaut
@@ -15,9 +20,11 @@ spec:
       labels:
         app: gitstronaut
     spec:
+      imagePullSecrets:
+        - name: forgejo-registry
       containers:
         - name: gitstronaut
-          image: ghcr.io/hinsonct/gitstronaut.com:latest
+          image: hinson-server.local:30300/hinsonct/gitstronaut.com:dc3c4beec4e8eb56528c3c16f7682f3db1c0661f
           ports:
             - containerPort: 3000
           resources:
